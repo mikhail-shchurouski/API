@@ -1,5 +1,5 @@
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
-from django.contrib.auth.hashers import make_password
+from django.contrib.auth.hashers import make_password, identify_hasher
 from django.db import models
 
 
@@ -37,14 +37,14 @@ class User(AbstractBaseUser):
     name = models.CharField(max_length=255, blank=True, null=True)
     full_name = models.CharField(max_length=255, blank=True, null=True)
     staff = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
     admin = models.BooleanField(default=False)
     timestamp = models.DateTimeField(auto_now_add=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
 
-    ojects = UserManager()
+    objects = UserManager()
 
     def __str__(self):
         return self.email
@@ -76,6 +76,10 @@ class User(AbstractBaseUser):
         return self.admin
 
     def save(self, *args, **kwargs):
-        if not self.id and not self.staff and not self.admin:
+        try:
+            _alg = identify_hasher(self.password)
+        except ValueError:
             self.password = make_password(self.password)
+        # if not self.id and not self.staff and not self.admin:
+        #     self.password = make_password(self.password)
         super().save(*args, **kwargs)
